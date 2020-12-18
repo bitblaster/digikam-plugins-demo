@@ -20,21 +20,21 @@
  *
  * ============================================================ */
 
-#ifndef DIGIKAM_HELLO_WORLD_GENERIC_PLUGIN_H
-#define DIGIKAM_HELLO_WORLD_GENERIC_PLUGIN_H
+#ifndef DIGIKAM_TRASH_WITH_RELATED_GENERIC_PLUGIN_H
+#define DIGIKAM_TRASH_WITH_RELATED_GENERIC_PLUGIN_H
 
 // Local includes
 
 #include "dplugingeneric.h"
 
-#define DPLUGIN_IID "org.kde.digikam.plugin.generic.HelloWorld"
+#define DPLUGIN_IID "it.bitblaster.digikam.plugin.generic.TrashWithRelated"
 
 using namespace Digikam;
 
-namespace DigikamGenericHelloWorldPlugin
+namespace DigikamGenericTrashWithRelatedPlugin
 {
 
-class HelloWorldPlugin : public DPluginGeneric
+class TrashWithRelatedPlugin : public DPluginGeneric
 {
     Q_OBJECT
     Q_PLUGIN_METADATA(IID DPLUGIN_IID)
@@ -42,8 +42,8 @@ class HelloWorldPlugin : public DPluginGeneric
 
 public:
 
-    explicit HelloWorldPlugin(QObject* const parent = nullptr);
-    ~HelloWorldPlugin();
+    explicit TrashWithRelatedPlugin(QObject* const parent = nullptr);
+    ~TrashWithRelatedPlugin();
 
     QString name()                 const override;
     QString iid()                  const override;
@@ -59,6 +59,6 @@ private Q_SLOTS:
     void slotHelloWorld();
 };
 
-} // namespace DigikamGenericHelloWorldPlugin
+} // namespace DigikamGenericTrashWithRelatedPlugin
 
-#endif // DIGIKAM_HELLO_WORLD_GENERIC_PLUGIN_H
+#endif // DIGIKAM_TRASH_WITH_RELATED_GENERIC_PLUGIN_H

@@ -4,8 +4,10 @@
 # Redistribution and use is allowed according to the terms of the BSD license.
 # For details see the accompanying COPYING-CMAKE-SCRIPTS file.
 
+
 project(pluginsdemo-generic)
 
+set(ECM_MIN_VERSION     "1.7.0")
 cmake_minimum_required(VERSION "3.1.0")
 set (CMAKE_CXX_STANDARD 11)
 set(CMAKE_AUTOMOC ON)
@@ -29,19 +31,23 @@ set_package_properties(DigikamCore PROPERTIES
 
 include(i18nUtils)
 
+find_package(ECM ${ECM_MIN_VERSION} CONFIG REQUIRED)
+set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/core/cmake/modules ${ECM_MODULE_PATH})
+include(ECMInstallIcons)
+
 include_directories($<TARGET_PROPERTY:Digikam::digikamcore,INTERFACE_INCLUDE_DIRECTORIES>/digikam)
 
-set(helloworld_generic_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/helloworldgenericplugin.cpp
+set(trashwithrelated_generic_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/trashwithrelatedplugin.cpp
                             ${i18n_QRC_SRCS}
                             ${i18n_QM}
 )
 
-add_library(Generic_HelloWorld_Plugin
-            MODULE ${helloworld_generic_SRCS})
+add_library(Generic_TrashWithRelated_Plugin
+            MODULE ${trashwithrelated_generic_SRCS})
 
-set_target_properties(Generic_HelloWorld_Plugin PROPERTIES PREFIX "")
+set_target_properties(Generic_TrashWithRelated_Plugin PROPERTIES PREFIX "")
 
-target_link_libraries(Generic_HelloWorld_Plugin
+target_link_libraries(Generic_TrashWithRelated_Plugin
                       Digikam::digikamcore
 
                       Qt5::Core
@@ -49,7 +55,9 @@ target_link_libraries(Generic_HelloWorld_Plugin
                       Qt5::Gui
 )
 
-MACRO_ADD_PLUGIN_INSTALL_TARGET(Generic_HelloWorld_Plugin generic)
+MACRO_ADD_PLUGIN_INSTALL_TARGET(Generic_TrashWithRelated_Plugin generic)
+
+add_subdirectory(icons)
 
 # ---
 

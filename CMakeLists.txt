@@ -15,10 +15,7 @@ include_directories(${CMAKE_SOURCE_DIR}/common)
 
 ###
 
-add_subdirectory(bqm)
-add_subdirectory(editor)
 add_subdirectory(generic)
-add_subdirectory(rawimport)
 
 ###
 
