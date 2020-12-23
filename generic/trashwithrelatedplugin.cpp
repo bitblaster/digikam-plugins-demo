@@ -38,10 +38,10 @@
 // digiKam includes
 
 #include <dinfointerface.h>
-#include <dmessagebox.h>
 #include <iteminfo.h>
 #include "dio.h"
-
+#include "digikam_debug.h"
+#include "itemviewutilities.h"
 
 // Local includes
 
@@ -76,8 +76,8 @@ QString TrashWithRelatedPlugin::iid() const
 
 QIcon TrashWithRelatedPlugin::icon() const
 {
-    //return QIcon::fromTheme(QLatin1String("dk-trash-with-related"));
-    return QIcon::fromTheme(QLatin1String("action-albumfolder-user-trash"));
+    //std::cout << "QIcon::themeSearchPaths: " << QIcon::themeSearchPaths().join(", ").toUtf8().constData()  << std::endl;
+    return QIcon::fromTheme(QLatin1String("dk-trash-with-related"));
 
 }
 
@@ -110,74 +110,90 @@ void TrashWithRelatedPlugin::setup(QObject* const parent)
     ac->setActionCategory(DPluginAction::GenericTool);
 
     connect(ac, SIGNAL(triggered(bool)),
-            this, SLOT(slotHelloWorld()));
+            this, SLOT(slotTrashWithRelated()));
 
     addAction(ac);
 }
 
-void TrashWithRelatedPlugin::slotHelloWorld()
+// REMOVE!
+// #define qCDebug qCInfo
+
+
+void TrashWithRelatedPlugin::slotTrashWithRelated()
 {
-    DInfoInterface* const iface = infoIface(sender());
+    DInfoInterface* iface = infoIface(sender());
     QList<QUrl> images          = iface->currentSelectedItems();
-    QString caption             = tr("List of current selected items (%1):").arg(images.count());
 
     if (images.isEmpty())
-    {
         images  = iface->currentAlbumItems();
-        caption = tr("List of all items (%1):").arg(images.count());
-    }
 
     if (!images.isEmpty())
     {
         QStringList items;
-        bool evaluatePickLabel = false;
         QWidget* const w      = qApp->activeWindow();
 
         // If we are in the Light Table, iface->currentSelectedItems() returns always ALL the items, not the selected one.
         // However in the main app window iface->currentSelectedItems() returns just the selected items.
         // So we have to use a trick: if we are in the Light Table first we dinamically invoke slotAssignPickLabel() to 
         // flag the selected item as rejected, then we cycle over the items and process only those flagged as rejected.
-        if (!strcmp("Digikam::LightTableWindow", w->metaObject()->className()))
+        if (w && !strcmp("Digikam::LightTableWindow", w->metaObject()->className()))
         {
+            qCDebug(DIGIKAM_GENERAL_LOG) << "Trash with related inside Light Table";
+            
             // Dynamically invoke the public method slotAssignPickLabel
-            QMetaObject::invokeMethod( w, "slotAssignPickLabel", Q_ARG( int, REJECTED_VAL ) );
-            QThread::msleep(100);
-            evaluatePickLabel = true;
+            QMetaObject::invokeMethod( w, "slotDeleteItem", Qt::DirectConnection);
+            QUrl deletedItem;
+            int count = 0;
+            while(deletedItem.isEmpty() && count < 20) 
+            {
+                QThread::msleep(100);
+                foreach (const QUrl& url, images)
+                {
+                    QFileInfo tmpFile(url.toLocalFile());
+                    if(!tmpFile.exists())
+                    {
+                        deletedItem = url;
+                    }
+                }
+                count++;
+            }
+            
+            if(deletedItem.isEmpty())
+            {
+                QMessageBox::critical(qApp->activeWindow(), tr("Error"),
+                    tr("Problems detecting deleted item, aborting deletion of related items"));
+                return;
+            }
+            qCDebug(DIGIKAM_GENERAL_LOG) << "Detected deleted item: " << deletedItem.toLocalFile();
+            images.clear();
+            images.push_back(deletedItem);
         }
         
+        QSet<ItemInfo> infos;
         foreach (const QUrl& url, images)
         {
-            if (evaluatePickLabel)
-            {
-                //This works but is not the recommended way, so we stick to using iface->itemInfo()
-                //ItemInfo info = ItemInfo::fromUrl(url);
-
-                const DInfoInterface::DInfoMap& info = iface->itemInfo(url);
-                DItemInfo item(info);
-                if (item.pickLabel() != REJECTED_VAL)
-                    continue;
-                
-                // Reset the pickLabel to avoid issues if the user restores the files from trash
-                QMetaObject::invokeMethod( w, "slotAssignPickLabel", Q_ARG( int, 0 ) );
-                QThread::msleep(100);
-            }
-                        
             QFileInfo tmpFile(url.toLocalFile());
             QDir tmpDir = tmpFile.dir();
             QString baseName = QFileInfo(tmpFile.fileName()).completeBaseName() + ".*";
             QFileInfoList fileList = tmpDir.entryInfoList(QStringList(baseName));
-            QList<ItemInfo> infos;
             foreach (const QFileInfo& fileToDelete, fileList)
             {   
-                std::cout << "Deleting " << fileToDelete.canonicalFilePath().toUtf8().constData() << std::endl;
-                
-                if (fileToDelete.exists() && fileToDelete.isWritable())
-                    infos << ItemInfo::fromLocalFile(fileToDelete.canonicalFilePath()); // Here we are forced to use ItemInfo
+                //std::cout << "Deleting related item: " << fileToDelete.canonicalFilePath().toUtf8().constData() << std::endl;
+                if (fileToDelete.exists() && fileToDelete.isWritable()) {
+                    const ItemInfo &info = ItemInfo::fromLocalFile(fileToDelete.canonicalFilePath());
+                    if(!infos.contains(info)) {
+                        qCDebug(DIGIKAM_GENERAL_LOG) << "Deleting related item: " << fileToDelete.canonicalFilePath();
+                        infos << info; // Here we are forced to use ItemInfo
+                    }
+                }
             }
-            
-            if(!infos.empty())
-                DIO::del(infos, true);
         }        
+
+        if(!infos.empty())
+        {
+            qCDebug(DIGIKAM_GENERAL_LOG) << "Executing deletion";
+            DIO::del(infos.toList(), true);
+        }
     }
 }
 

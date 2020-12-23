@@ -56,7 +56,7 @@ public:
 
 private Q_SLOTS:
 
-    void slotHelloWorld();
+    void slotTrashWithRelated();
 };
 
 } // namespace DigikamGenericTrashWithRelatedPlugin
